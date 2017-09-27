@@ -2,11 +2,126 @@
 <html lang="en">
 <head>
   <title>Our simple HTTP server</title>
-  <link rel="stylesheet" type="text/css" href="/style.css">
+  <link rel="stylesheet" type="text/css" href="style.css">
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
   <script type="text/babel">
 
+  const respond = (xhr, parse) => {
+      const content = document.querySelector("#content");
+      console.dir(xhr);
+      switch(xhr.status) {
+            case 200:
+              content.innerHTML = `<b>Success</b>`;
+              if(parse) {
+                const obj = JSON.parse(xhr.response);
+                content.innerHTML += ("<p>" + JSON.stringify(obj) + "</p>");
+              } 
+              else {
+                console.log('received');
+              }
+              break;
+            case 201:
+              content.innerHTML = `<b>Create</b>`;
+              if(parse) {
+                const obj = JSON.parse(xhr.response);
+                content.innerHTML += ("<p>Message: " + obj.message + "</p>");
+              } 
+              else {
+                console.log('received');
+              }
+              break;
+
+            case 204:
+              content.innerHTML = `<b>Updated (No Content)</b>`;
+              break;
+            
+            case 304:
+              content.innerHTML = `<b>Not Modified</b>`;
+              break;
+
+            case 400:
+              content.innerHTML = `<b>Bad Request</b>`;
+              if(parse) {
+                const obj = JSON.parse(xhr.response);
+                content.innerHTML += ("<p>Message: " + obj.message + "</p>");
+              } 
+              else {
+                console.log('received');
+              }
+              break;
+              
+            case 404:
+              content.innerHTML = `<b>Resource Not Found</b>`;
+              if(parse) {
+                const obj = JSON.parse(xhr.response);
+                content.innerHTML += ("<p>Message: " + obj.message + "</p>");
+              } 
+              else {
+                console.log('received');
+              }
+              break;
+              
+            default:
+              content.innerHTML =  `Error code not implemented by client.`;
+              break;
+        }
+  };
+  
+
+  const requestUpdate = (e, userForm) => {
+   
+    const url = userForm.querySelector('#urlField').value;
+  
+    const method = userForm.querySelector('#methodSelect').value;
+    
+
+    const xhr = new XMLHttpRequest();
+   
+    xhr.open(method, url);
+    
+    xhr.setRequestHeader('Accept', 'application/json');
+
+    if(method == 'get') {
+      xhr.onload = () => respond(xhr, true);
+    } else {
+      xhr.onload = () => respond(xhr, false);
+    }
+    xhr.send();
+
+    e.preventDefault();
+  };
+
+  const sendUser = (e, nameForm) => {
+
+    const name = nameForm.querySelector('#nameField').value;
+  
+    const age = nameForm.querySelector('#ageField').value;
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/addUser?name=' + name + '&age=' + age);
+    xhr.setRequestHeader('Accept', 'application/json');
+     
+    xhr.onload = () => respond(xhr, true);
+    xhr.send();
+
+    e.preventDefault();
+  };
+
+  const init = () => {
+    const userForm = document.querySelector('#userForm');
+    const nameForm = document.querySelector('#nameForm');
+
+    const getUsers = (e) => requestUpdate(e, userForm);
+    const submit = (e) => sendUser(e, nameForm);
+
+        userForm.addEventListener('submit', getUsers );
+
+        nameForm.addEventListener('submit', submit );
+  };
+
+  window.onload = init;
+      
   </script>
 </head>
 <body>
@@ -17,7 +132,7 @@
       <input id="nameField" type="text" name="name" />
       <label for="age">Age: </label>
       <input id="ageField" type="number" name="age" min="0" max="100" step="1"/>
-      <input type="submit" value="Add User" />
+      <input id="addButton" type="submit" value="Add User" />
     </form>
     <form id="userForm" action="/getUsers" method="get">
       <select id='urlField'>
@@ -25,8 +140,8 @@
         <option value='/notReal'>/notReal</option>
       </select>
       <select id="methodSelect">
-        <option value="get">GET</option>
-        <option value="head">HEAD</option>
+        <option value='get'>GET</option>
+        <option value='head'>HEAD</option>
       </select>
       <input type="submit" value="Get User" />
     </form>
